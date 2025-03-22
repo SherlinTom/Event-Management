@@ -1,23 +1,32 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react'
-import { Card, Col, Container, Row } from 'react-bootstrap'
+import { Card, Col, Container, Image, Row } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom';
 
 const Events = () => {
     const [event,setEvent] = useState([]);
     const navigate = useNavigate((state) => state.users.loggedUser?.token);
     useEffect(() => {
-        const fetchEvent = async () => {
+      const fetchEvent = async () => {
           try {
-            const {data} = await axios.get(`http://localhost:4006/api/v1/user/all-events`,{withCredentials:true});
-            console.log(data);
-            setEvent(data.events);
+              const { data } = await axios.get(
+                  `http://localhost:4006/api/v1/user/all-events`,
+                  { withCredentials: true ,  headers: {
+                    'Content-Type': 'application/json'
+                }}
+              );
+              
+              console.log("Fetched Events:", data); // Corrected logging
+              setEvent(data.events);
+              
           } catch (error) {
-            console.error("Error fetching jobs:", error);
+              console.error("Error fetching events:", error.response ? error.response.data.message : error.message);
           }
-        };
-        fetchEvent();
-      }, []);
+      };
+  
+      fetchEvent();
+  }, []);
+  
       const handleEventDetails = (id) => {
         navigate(`/details/${id}`);
       };
@@ -32,13 +41,41 @@ const Events = () => {
                         <Col key={events._id} className='d-flex' md={3}>
                             
                         <Card className="mb-3 shadow">
-                          {(
-                            events.status === "upcoming" ? <div className="badge bg-success text-white col-md-5 p-2 m-2" style={{fontSize:15}}>{events.status}</div> 
-                             : events.status === "cancelled" ? <div className="badge bg-danger text-white col-md-5 p-2 m-2" style={{fontSize:15}}>{events.status}</div>
-                             : events.status === "completed" ? <div className="badge bg-warning text-white col-md-5 p-2 m-2" style={{fontSize:15}}>{events.status}</div>
-                             : null
-                          )}
+                        <div style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover' }}>
                         
+                          <Card.Img 
+                              src={`http://localhost:4006/${events.photo?.replace(/\\/g, '/')}`} 
+                              variant='top' 
+                              alt="Event Image" 
+                              onError={(e) => e.target.src = 'http://localhost:4006/uploads/default.jpg'}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+
+                         
+                          {events.status && (
+                              <div 
+                                  style={{
+                                      position: 'absolute',
+                                      top: '10px',
+                                      left: '10px',
+                                      backgroundColor: 
+                                          events.status === "upcoming" ? "green" :
+                                          events.status === "cancelled" ? "red" :
+                                          events.status === "completed" ? "orange" :
+                                          "gray",
+                                      color: 'white',
+                                      padding: '5px 10px',
+                                      borderRadius: '5px',
+                                      fontSize: '14px',
+                                      fontWeight: 'bold',
+                                      zIndex: 1  // Ensure it appears above the image
+                                  }}
+                              >
+                                  {events.status}
+                              </div>
+                          )}
+                      </div>
+
                             <Card.Body onClick={() => handleEventDetails(events._id)}>
                             <Card.Title>{events.event_name}</Card.Title>
                             <Card.Subtitle className="mb-2 text-muted">

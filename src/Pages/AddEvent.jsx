@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Button, Card, Col, Container, Form, Row } from 'react-bootstrap'
 import * as formik from 'formik';
 import * as yup from 'yup';
@@ -11,9 +11,18 @@ const AddEvent = () => {
     const { Formik } = formik;
     const token = useSelector((state) => state.users.loggedUser?.token);
   
+    const [previewImage, setPreviewImage] = useState(null);
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const handleSubmit = async (values,{resetForm}) => {
+        const formData = new FormData();
+        formData.append("event_name",values.event_name);
+        formData.append("event_date",values.event_date);
+        formData.append("location",values.location);
+        formData.append("description",values.description);
+        formData.append("category",values.category);
+        formData.append("status",values.status);
+        formData.append("photo",values.photo);
         try {
             if (!token) {
                 toast.error("User not authenticated");
@@ -22,11 +31,12 @@ const AddEvent = () => {
            
             const { data } = await axios.post(
                 'http://localhost:4006/api/v1/user/add-event',
-                values,
+                formData,
                 {
                     withCredentials: true,
                     headers: {
-                        Authorization: `Bearer ${token}`
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "multipart/form-data"
                     },
                 }
             );
@@ -52,7 +62,8 @@ const AddEvent = () => {
        event_date: yup.date().required("Please select the event date"),
        location: yup.string().required("Please enter Location"),
        category: yup.string().required("Please enter category of the event"),
-       status: yup.string().required("Please select event status")
+       status: yup.string().required("Please select event status"),
+       photo: yup.mixed().required("Please Upload photo")
       });
   return (
     <Container className='my-5'>
@@ -70,10 +81,11 @@ const AddEvent = () => {
                     location: '',
                     description: '',
                     category: '',
-                    status: ''
+                    status: '',
+                    photo: ''
                 }}
                 >
-                {({ handleSubmit, handleChange, values, touched, errors }) => (
+                {({ handleSubmit, handleChange, setFieldValue, values, touched, errors }) => (
                     <Form noValidate onSubmit={handleSubmit}>
                     <Row className="mb-3">
                         <Form.Group as={Col} md="6" className="position-relative">
@@ -108,7 +120,7 @@ const AddEvent = () => {
                         </Form.Group>
                     </Row>
                     <Row className="mb-3">
-                        <Form.Group as={Col} md="4" className="position-relative">
+                        <Form.Group as={Col} md="6" className="position-relative">
                             <Form.Label> Date</Form.Label>
                             <Form.Control
                             type="datetime-local"
@@ -123,7 +135,7 @@ const AddEvent = () => {
                             {errors.event_date}
                         </Form.Control.Feedback>
                         </Form.Group>
-                        <Form.Group as={Col} md="4" className="position-relative">
+                        <Form.Group as={Col} md="6" className="position-relative">
                             <Form.Label>Category</Form.Label>
                             <Form.Control
                             type="text"
@@ -138,7 +150,28 @@ const AddEvent = () => {
                             {errors.category}
                         </Form.Control.Feedback>
                         </Form.Group>
-                        <Form.Group as={Col} md="4" className="position-relative">
+                        </Row>
+                        
+                        <Row className="mb-3">
+                        <Form.Group as={Col} md="12" className="position-relative">
+                            <Form.Label>Event Details</Form.Label>
+                            <Form.Control
+                            as="textarea"
+                            name="description"
+                            rows={3}
+                            placeholder="Enter details of the event"
+                            value={values.description}
+                            onChange={handleChange}
+                            isValid={touched.description && !errors.description}
+                            isInvalid={!!errors.description}
+                            />
+                            <Form.Control.Feedback type="invalid" tooltip>
+                            {errors.description}
+                            </Form.Control.Feedback>
+                        </Form.Group>
+                        </Row>
+                        <Row>
+                        <Form.Group as={Col} md="6" className="position-relative">
                             <Form.Label>Status</Form.Label>
                             <Form.Control
                                 as="select" // Change the input to a select dropdown
@@ -157,24 +190,30 @@ const AddEvent = () => {
                             {errors.status}
                         </Form.Control.Feedback>
                         </Form.Group>
-                        </Row>
-                        <Row className="mb-3">
-                        <Form.Group as={Col} md="12" className="position-relative">
-                            <Form.Label>Event Details</Form.Label>
-                            <Form.Control
-                            as="textarea"
-                            name="description"
-                            rows={3}
-                            placeholder="Enter details of the event"
-                            value={values.description}
-                            onChange={handleChange}
-                            isValid={touched.description && !errors.description}
-                            isInvalid={!!errors.description}
-                            />
-                            <Form.Control.Feedback type="invalid" tooltip>
-                            {errors.description}
-                            </Form.Control.Feedback>
-                        </Form.Group>
+                        
+                        <Form.Group as={Col} md={6} controlId="photo" className="position-relative mb-2">
+                        <Form.Label>Photo</Form.Label>
+                        <Form.Control
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => {
+                            setFieldValue("photo", event.currentTarget.files[0]); 
+                            setPreviewImage(URL.createObjectURL(event.currentTarget.files[0])); // Show preview
+                        }}
+                        isInvalid={!!errors.photo}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                        {errors.photo}
+                        </Form.Control.Feedback>
+
+                        {/* Show Preview if an Image is Selected */}
+                        {previewImage && (
+                        <div className="mt-3">
+                            <img src={previewImage} alt="Image Preview" style={{ width: "100px", height: "100px", borderRadius: "50%" }} />
+                        </div>
+                        )}
+                    </Form.Group>
+
                         </Row>
                     
                         <div className=" text-center">

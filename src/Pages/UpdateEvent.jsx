@@ -12,6 +12,7 @@ const UpdateEvent = () => {
     const { Formik } = formik;
     const {id} = useParams();
     const [event,setEvent] = useState(null);
+    const [previewImage, setPreviewImage] = useState(null);
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const token = useSelector((state) => state.users.loggedUser?.token);
@@ -35,12 +36,25 @@ const UpdateEvent = () => {
         fetchEvent();
       }, [token]);
 
-      const handleUpdate = async (values) =>{
+      const handleUpdate = async (values, { setSubmitting }) =>{
+        const formData = new FormData();
+        formData.append("event_name",values.event_name);
+        formData.append("event_date",values.event_date);
+        formData.append("location",values.location);
+        formData.append("description",values.description);
+        formData.append("category",values.category);
+        formData.append("status",values.status);
+        if(values.photo instanceof File){
+            formData.append("photo", values.photo);
+        }
         try {
-            const {data} = await axios.put(`http://localhost:4006/api/v1/user/update-event/${id}`,values,{withCredentials: true,
+            const {data} = await axios.put(`http://localhost:4006/api/v1/user/update-event/${id}`,formData,{withCredentials: true,
                 headers: {
-                    Authorization: `Bearer ${token}` // Ensure it's prefixed with "Bearer"
-                },});
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "multipart/form-data" 
+                }});
+console.log(data);
+
             if(data.success){
                 toast.success(data.message);
                 dispatch(updateEvent(data.events));
@@ -51,7 +65,9 @@ const UpdateEvent = () => {
             }
         } catch (error) {
             toast.error(error.message);
-        }
+        }finally {
+            setSubmitting(false);
+          }
       }
       const formatDateTimeForInput = (isoDate) => {
         if (!isoDate) return "";
@@ -75,7 +91,8 @@ const UpdateEvent = () => {
            event_date: yup.date(),
            location: yup.string(),
            category: yup.string(),
-           status: yup.string()
+           status: yup.string(),
+           photo: yup.mixed()
           });
   return (
     <Container className='my-5'>
@@ -95,112 +112,147 @@ const UpdateEvent = () => {
                         location: event.location || '',
                         description: event.description || '',
                         category: event.category || '',
-                        status: event.status || ''
+                        status: event.status || '',
+                        photo: event.photo || ''
                     }}
                     >
-                    {({ handleSubmit, handleChange, values, touched, errors }) => (
+                    {({ handleSubmit, handleChange, setFieldValue, values, touched, errors }) => (
                         <Form noValidate onSubmit={handleSubmit}>
                         <Row className="mb-3">
-                            <Form.Group as={Col} md="6" className="position-relative">
-                                <Form.Label>Event Name</Form.Label>
-                                <Form.Control
-                                type="text"
-                                placeholder="Enter Event Name"
-                                name="event_name"
-                                value={values.event_name}
-                                onChange={handleChange}
-                                isInvalid={!!errors.event_name}
-                            />
-        
-                            <Form.Control.Feedback type="invalid" tooltip>
-                                {errors.event_name}
-                            </Form.Control.Feedback>
-                            </Form.Group>
-                            <Form.Group as={Col} md="6" className="position-relative">
-                                <Form.Label>Location</Form.Label>
-                                <Form.Control
-                                type="text"
-                                placeholder="Enter Location of the Event"
-                                name="location"
-                                value={values.location}
-                                onChange={handleChange}
-                                isInvalid={!!errors.location}
-                            />
-        
-                            <Form.Control.Feedback type="invalid" tooltip>
-                                {errors.location}
-                            </Form.Control.Feedback>
-                            </Form.Group>
-                        </Row>
+                        <Form.Group as={Col} md="6" className="position-relative">
+                            <Form.Label>Event Name</Form.Label>
+                            <Form.Control
+                            type="text"
+                            placeholder="Enter Event Name"
+                            name="event_name"
+                            value={values.event_name}
+                            onChange={handleChange}
+                            isInvalid={!!errors.event_name}
+                        />
+    
+                        <Form.Control.Feedback type="invalid" tooltip>
+                            {errors.event_name}
+                        </Form.Control.Feedback>
+                        </Form.Group>
+                        <Form.Group as={Col} md="6" className="position-relative">
+                            <Form.Label>Location</Form.Label>
+                            <Form.Control
+                            type="text"
+                            placeholder="Enter Location of the Event"
+                            name="location"
+                            value={values.location}
+                            onChange={handleChange}
+                            isInvalid={!!errors.location}
+                        />
+    
+                        <Form.Control.Feedback type="invalid" tooltip>
+                            {errors.location}
+                        </Form.Control.Feedback>
+                        </Form.Group>
+                    </Row>
                         <Row className="mb-3">
-                            <Form.Group as={Col} md="4" className="position-relative">
-                                <Form.Label> Date</Form.Label>
-                                <Form.Control
-                                type="datetime-local"
-                                placeholder="Enter Event Date and Time"
-                                name="event_date"
-                                value={values.event_date}
-                                onChange={handleChange}
-                                isInvalid={!!errors.event_date}
+                        <Form.Group as={Col} md="6" className="position-relative">
+                            <Form.Label> Date</Form.Label>
+                            <Form.Control
+                            type="datetime-local"
+                            placeholder="Enter Event Date and Time"
+                            name="event_date"
+                            value={values.event_date}
+                            onChange={handleChange}
+                            isInvalid={!!errors.event_date}
+                        />
+
+                        <Form.Control.Feedback type="invalid" tooltip>
+                            {errors.event_date}
+                        </Form.Control.Feedback>
+                        </Form.Group>
+                        <Form.Group as={Col} md="6" className="position-relative">
+                            <Form.Label>Category</Form.Label>
+                            <Form.Control
+                            type="text"
+                            placeholder="Enter Category of the Event"
+                            name="category"
+                            value={values.category}
+                            onChange={handleChange}
+                            isInvalid={!!errors.category}
+                        />
+
+                        <Form.Control.Feedback type="invalid" tooltip>
+                            {errors.category}
+                        </Form.Control.Feedback>
+                        </Form.Group>
+                        </Row>
+                        
+                        <Row className="mb-3">
+                        <Form.Group as={Col} md="12" className="position-relative">
+                            <Form.Label>Event Details</Form.Label>
+                            <Form.Control
+                            as="textarea"
+                            name="description"
+                            rows={3}
+                            placeholder="Enter details of the event"
+                            value={values.description}
+                            onChange={handleChange}
+                            isValid={touched.description && !errors.description}
+                            isInvalid={!!errors.description}
                             />
-        
                             <Form.Control.Feedback type="invalid" tooltip>
-                                {errors.event_date}
+                            {errors.description}
                             </Form.Control.Feedback>
-                            </Form.Group>
-                            <Form.Group as={Col} md="4" className="position-relative">
-                                <Form.Label>Category</Form.Label>
-                                <Form.Control
-                                type="text"
-                                placeholder="Enter Category of the Event"
-                                name="category"
-                                value={values.category}
+                        </Form.Group>
+                        </Row>
+                        <Row>
+                        <Form.Group as={Col} md="6" className="position-relative">
+                            <Form.Label>Status</Form.Label>
+                            <Form.Control
+                                as="select" // Change the input to a select dropdown
+                                name="status"
+                                value={values.status}
                                 onChange={handleChange}
-                                isInvalid={!!errors.category}
+                                isValid={touched.status && !errors.status}
+                                isInvalid={!!errors.status}
+                                >
+                                <option value="">Select Event Status</option> 
+                                <option value="upcoming">Upcoming</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                                </Form.Control>
+                        <Form.Control.Feedback type="invalid" tooltip>
+                            {errors.status}
+                        </Form.Control.Feedback>
+                        </Form.Group>
+                        
+                        <Form.Group as={Col} md={6} controlId="photo" className="position-relative mb-2">
+                        <Form.Label>Photo</Form.Label>
+                        <Form.Control
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => {
+                            const file = event.currentTarget.files[0];
+                            setFieldValue("photo", file);
+                            if (file) {
+                                setPreviewImage(URL.createObjectURL(file)); // Show preview
+                            } else {
+                                setPreviewImage(null); // Clear preview
+                            }
+                        }}
+                        isInvalid={!!errors.photo}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                        {errors.photo}
+                        </Form.Control.Feedback>
+
+                        {previewImage && (
+                        <div className="mt-3">
+                            <img 
+                                src={previewImage} 
+                                alt="Image Preview" 
+                                style={{ width: "100px", height: "100px", borderRadius: "50%" }}
                             />
-        
-                            <Form.Control.Feedback type="invalid" tooltip>
-                                {errors.category}
-                            </Form.Control.Feedback>
-                            </Form.Group>
-                            <Form.Group as={Col} md="4" className="position-relative">
-                                <Form.Label>Status</Form.Label>
-                                <Form.Control
-                                    as="select" // Change the input to a select dropdown
-                                    name="status"
-                                    value={values.status}
-                                    onChange={handleChange}
-                                    isValid={touched.status && !errors.status}
-                                    isInvalid={!!errors.status}
-                                    >
-                                    <option value="">Select Event Status</option> 
-                                    <option value="upcoming">Upcoming</option>
-                                    <option value="completed">Completed</option>
-                                    <option value="cancelled">Cancelled</option>
-                                    </Form.Control>
-                            <Form.Control.Feedback type="invalid" tooltip>
-                                {errors.status}
-                            </Form.Control.Feedback>
-                            </Form.Group>
-                            </Row>
-                            <Row className="mb-3">
-                            <Form.Group as={Col} md="12" className="position-relative">
-                                <Form.Label>Event Details</Form.Label>
-                                <Form.Control
-                                as="textarea"
-                                name="description"
-                                rows={3}
-                                placeholder="Enter details of the event"
-                                value={values.description}
-                                onChange={handleChange}
-                                isValid={touched.description && !errors.description}
-                                isInvalid={!!errors.description}
-                                />
-                                <Form.Control.Feedback type="invalid" tooltip>
-                                {errors.description}
-                                </Form.Control.Feedback>
-                            </Form.Group>
-                            </Row>
+                        </div>
+                        )}
+                        </Form.Group>
+                         </Row>
                         
                             <div className=" text-center">
                             <Button type="submit" >Update</Button>
